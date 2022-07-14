@@ -14,7 +14,7 @@ true_par=[0.5,10];
 ts=linspace(t0,tf,51);
 [~,y]=ode45(@logistic,ts,y0,[],true_par);
 
-% create synthetic data with 10% proportional error
+% create synthetic data with 20% proportional error
 sigma=0.2;
 prop_data = y.*(1+sigma*rand(size(y)));
 save('prop_data.mat','prop_data')
@@ -27,8 +27,16 @@ init_guess=[0.2,4];
 ols_error_estimate = @(par)ols_formulation(par,const_data,ts,y0);
 options = optimset('MaxIter', 25000, 'MaxFunEvals', 50000, 'Display', 'on');
 [ols_optpar,~,converge_flag,~]=fminsearch(ols_error_estimate, init_guess,options);
-disp('OLS Estimation')
-ols_optpar
+
+% plot the best fit along with the data
+[~,best_fit] = ode45(@logistic,ts,y0,[],ols_optpar);
+figure
+plot(ts,const_data,'b+',ts,best_fit,'r--','linewidth',2)
+set(gca,'Fontsize',20,'linewidth',2)
+xlabel('Time')
+ylabel('Population')
+legend('Data','Best Fit Model','location','southeast')
+title('OLS Optimization with Constant Error Data')
 %% GLS Formulation with proportional error data
 gammas=1;
 weights=ones(size(prop_data));
@@ -59,6 +67,16 @@ ols_optpar
 disp('GLS Estimation')
 gls_optpar
 
+% Plot the best fit GLS with the data
+[~,best_fit_gls] = ode45(@logistic,ts,y0,[],gls_optpar);
+figure
+plot(ts,prop_data,'b+',ts,best_fit_gls,'r--','linewidth',2)
+set(gca,'Fontsize',20,'linewidth',2)
+xlabel('Time')
+ylabel('Population')
+legend('Data','Best Fit Model','location','southeast')
+title('GLS Optimization with Proportional Error Data')
+
 %% Residual Examination
 
 % OLS Solution Residual
@@ -74,13 +92,13 @@ figure
 subplot(2,2,1)
 plot(ts,ols_resids,'b*')
 set(gca,'Fontsize',18,'linewidth',1.5)
-title('OLS')
+title('OLS with Constant Error')
 xlabel('Time (Days)')
 ylabel('Residual')
 subplot(2,2,2)
 plot(ts,gls_resids,'r*')
 set(gca,'Fontsize',18,'linewidth',1.5)
-title('GLS')
+title('GLS with Prop. Error')
 xlabel('Time (Days)')
 subplot(2,2,3)
 plot(ols_sol,ols_resids,'b*')
